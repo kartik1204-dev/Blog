@@ -10,12 +10,12 @@ const App = () => {
   const [readHover , setReadHover]=useState(false)
   const navigate = useNavigate()
   return (
-    <div>
+    <div style={{display:'flex',flexDirection:'column',justifyContent:'space-betweeen',height:'100vh'}}>
      <div style={{display:'flex', }}>
-     <video autoPlay={true} muted={true} loop={true} style={{zIndex:1,position:'absolute',width:1300,opacity:0.2}} src={box}/>
-     <div style={{position:'absolute', width:"100%",height:"100%",backgroundColor:'rgb(10, 28, 48)'}}></div>
+     <video autoPlay={true} muted={true} loop={true} style={{zIndex:1,position:'absolute',width:"100vw",opacity:0.2}} src={box}/>
+     <div style={{position:'absolute', width:"100vw",height:"100vh",backgroundColor:'rgb(10, 28, 48)'}}></div>
       <div style={{display:'flex',justifyContent:'space-between',zIndex:1,
-        width:'100%',paddingLeft:100,
+        width:'100vw',paddingLeft:100,
         paddingRight:40
         ,alignItems:'center'
         }} id='medium'>
@@ -61,8 +61,8 @@ const App = () => {
       </div>
       </div>
      </div>
-     <hr style={{height:1,backgroundColor:'black'}}></hr>
-     <div id='parent-div' style={{display:'flex',flexDirection:'row',zIndex:1,justifyContent:'space-between',alignItems:'center',height:450}}>
+
+     <div id='parent-div' style={{display:'flex',flexDirection:'row',zIndex:1,justifyContent:'space-between',alignItems:'center',height:'100vh'}}>
       <div id='child-div' style={{display:'flex',flexDirection:'column',zIndex:1,height:500, width:'50%',alignItems:'center',justifyContent:'center',}}>
       <div style={{lineHeight:0.5,display:'flex',flexDirection:'column',alignItems:'center'}}>
       <h1 style={{color:'white',fontFamily:'roboto'}}>
@@ -79,7 +79,7 @@ const App = () => {
       </div>
       <img style={{zIndex:1,marginRight:130}}src={blog}/>
      </div>
-     <hr style={{height:1,backgroundColor:'black'}}></hr>
+    
     <div id='footer'style={{paddingTop:25,paddingBottom:25, position:'relative',display:'flex',zIndex:2,justifyContent:'center',gap:30,backgroundColor:'rgb(9, 52, 76)'}}>
       <p onClick={()=>navigate("/help")} style={{fontWeight:700,cursor:'pointer',color:'rgb(128, 164, 206)',fontFamily:'roboto'}}>Help</p>
       <p onClick={()=>navigate("/about")} style={{fontWeight:700,cursor:'pointer',color:'rgb(128, 164, 206)',fontFamily:'roboto'}}>About</p>

@@ -80,7 +80,8 @@ const addBlog = () => {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        height: 800,
+        height: "100vh",
+        width: "100vw",
       }}
     >
    
@@ -174,7 +175,7 @@ const addBlog = () => {
 
       <div
         style={{
-          width: 1100,
+          width: "80%",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -184,7 +185,7 @@ const addBlog = () => {
           style={{
             position: "relative",
             backgroundColor: "transparent",
-            height: 500,
+            height: "60vh",
             display: "flex",
             flexDirection: "column",
             paddingTop: 50,
@@ -216,30 +217,30 @@ const addBlog = () => {
         <img
           style={{
             position: "absolute",
-            height: 800,
+            height: "105vh",
             right: "50%",
             opacity: 0.1,
-            top: "12%",
+            top: "9%",
           }}
           src={doddle}
         />
         <img
           style={{
             position: "absolute",
-            height: 800,
+            height: "105vh",
             left: "40%",
             opacity: 0.1,
-            top: "12%",
+            top: "9%",
           }}
           src={doddle}
         />
         <img
           style={{
             position: "absolute",
-            height: 800,
+            height: "105vh",
             left: "80%",
             opacity: 0.1,
-            top: "12%",
+            top: "9%",
           }}
           src={doddle}
         />
@@ -257,7 +258,7 @@ const addBlog = () => {
                 border: "none",
                 outline: "none",
                 marginBottom: 20,
-                marginTop: 10,
+                marginTop: 50,
                 
               }}
               type="text"
@@ -269,8 +270,8 @@ const addBlog = () => {
               padding: 10,
               boxShadow: "0 0 60px rgba(0, 0, 0, 0.2)",
               backgroundColor: "transparent",
-              height: 475,
-              width: 900,
+              height: "70vh",
+              width: "60vw",
               borderRadius: 10,
               zIndex: 2,
               position: "relative",

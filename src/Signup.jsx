@@ -50,7 +50,7 @@ if(password && password.length<6)setPassError("Password length must be greater t
       flexDirection:'column',
       alignItems:'center',
       justifyContent:'center',
-      height:700,
+      height:'100vh',
       backgroundColor:'transparent',
       
     }}>
@@ -64,9 +64,9 @@ if(password && password.length<6)setPassError("Password length must be greater t
   }}
 />
 </GoogleOAuthProvider>
-      <img style={{position:'absolute' ,width:1300,
-          height:750,}} src={pahad} alt="" />
-        <div style={{position:'absolute',height:750,width:"100%",backgroundColor:"rgba(9,52,76,0.7)",zIndex:2,}}> </div>
+      <img style={{position:'absolute' ,width:"100vw",
+          height:"100vh",}} src={pahad} alt="" />
+        <div style={{position:'absolute',height:"100vh",width:"100%",backgroundColor:"rgba(9,52,76,0.7)",zIndex:2,}}> </div>
         {/* <div style={{height:150,width:150,borderRadius:100,backgroundColor:'green',position:'absolute',left:'25%',top:'3%'}}></div>
       <div style={{height:150,width:150,borderRadius:100,backgroundColor:'pink',position:'absolute',right:'25%',top:'3%'}}></div> */}
               <ToastContainer/>
@@ -80,8 +80,7 @@ if(password && password.length<6)setPassError("Password length must be greater t
       justifyContent:'center',
       alignItems:'center',
       borderRadius:40,
-      width:300,
-      height:350,
+
       boxShadow:'0px 0px 30px rgb(39, 38, 38)',
       zIndex:2,
       border:"1px solid rgb(146, 143, 143)",

@@ -89,9 +89,9 @@ const Home = () => {
     false,
   ]);
   return (
-    <div style={{ backgroundColor: "#09344c", height: 800, zIndex: 4 }}>
+    <div style={{ backgroundColor: "#09344c", height:"100vh", zIndex: 4 }}>
       <img
-        style={{ position: "absolute", height: "100%", opacity: 0.1 }}
+        style={{ position: "absolute", height: "100vh", opacity: 0.1 }}
         src={home}
       />
       <div></div>

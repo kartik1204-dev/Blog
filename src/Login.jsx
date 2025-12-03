@@ -63,18 +63,18 @@ const Login = () => {
       flexDirection:'row',
       alignItems:'center',
       justifyContent:'center',
-      height:700,
+      height:'100vh',
       width:'100%',
       gap:30
       }}>
         <img style={{
           position:'absolute',
-          width:1300,
-          height:750,
+          width:"100vw",
+          height:"100vh",
        
         }}  src={pahad}/>
         <ToastContainer/>
-        <div style={{position:'absolute',height:750,width:"100%",backgroundColor:"rgba(9,52,76,0.7)",zIndex:2,}}> 
+        <div style={{position:'absolute',height:"100vh",width:"100%",backgroundColor:"rgba(9,52,76,0.7)",zIndex:2,}}> 
           
         </div>
        
@@ -103,8 +103,8 @@ const Login = () => {
       justifyContent:'flex-start',
       alignItems:'center',
       borderRadius:40,
-      width:400
-      ,fontFamily:'roboto',
+      width:400,
+      fontFamily:'roboto',
       height:630,
  boxShadow:'0px 0px 50px rgba(0,0,0,0.3)',
  paddingTop:10,
