@@ -5,6 +5,9 @@ const cors=require('cors')                  // CORS to allow cross-origin reques
 const bodyParser = require('body-parser');  // Middleware to handle JSON data
 const app =new express()
 const jwt = require("jsonwebtoken")         // JWT for authentication
+const bcrypt = require("bcryptjs")          // bcrypt compare support for hashed legacy users
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 
 // Enable CORS so frontend can access backend API
 app.use(cors({origin:'*'}))
@@ -82,32 +85,47 @@ app.post('/signup',async(req , res)=>{
 // API for login and check credentials
 app.post('/login',async(req,res)=>{
   console.log("hi",req.body)
+  try {
+    const email = String(req.body.email || "").trim()
+    const password = String(req.body.password || "")
 
-  // Find user with email
-  const userData = await User.find({
-    email : req.body.email,
-  })
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" })
+    }
 
-  // If no user found
-  if(!userData)
-    return res.status(401).json({error : "user not found"})
+    const escapedEmail = escapeRegex(email)
 
-  console.log(userData)
+    // Find one user with email
+    const userData = await User.findOne({
+      email : { $regex: new RegExp(`^${escapedEmail}$`, "i") },
+    })
 
-  // Match password
-  if(userData[0].password===req.body.password){
-    // Generate JWT token on successful login
-    const token = jwt.sign(
-      { email : userData.email , username : userData.username },
-      JWT_SECRET,
-      { expiresIn : '2h'}
-    )
-    console.log('signed')
-    res.json({ success: true , token : token })
-  }
-  else{
+    // If no user found
+    if(!userData)
+      return res.status(401).json({error : "user not found"})
+
+    // Match password for both plain-text and bcrypt-hashed records.
+    let isPasswordMatch = userData.password === password
+    if (!isPasswordMatch && typeof userData.password === "string" && userData.password.startsWith("$2")) {
+      isPasswordMatch = await bcrypt.compare(password, userData.password)
+    }
+
+    if(isPasswordMatch){
+      // Generate JWT token on successful login
+      const token = jwt.sign(
+        { email : userData.email , username : userData.username },
+        JWT_SECRET,
+        { expiresIn : '2h'}
+      )
+      console.log('signed')
+      return res.json({ success: true , token : token })
+    }
+
     // Invalid password
-    res.status(401).json("Invalid Credentials")
+    return res.status(401).json({ error: "Invalid Credentials" })
+  } catch (error) {
+    console.error("Login error", error)
+    return res.status(500).json({ error: "Login failed" })
   }
 })
 

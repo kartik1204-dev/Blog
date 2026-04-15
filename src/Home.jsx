@@ -20,11 +20,14 @@ import {
   HarmBlockThreshold,
 } from "@google/generative-ai";
 import { useEffect } from "react";
+import { useRef } from "react";
+
 const Home = () => {
   const [blogs, setBlogs] = useState([]);
   const image = useSelector((state) => state.users.image);
   const data = useSelector((state) => state.users.name);
   const [summary, setSummary] = useState("");
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     console.log("hello", blogs);
@@ -37,7 +40,7 @@ const Home = () => {
    */
 
   const genAI = new GoogleGenerativeAI(
-    "AIzaSyBXLyOTVyAYEjuO9MrzB8mIVg1TiP18NM4"
+    "AIzaSyBXLyOTVyAYEjuO9MrzB8mIVg1TiP18NM4",
   );
 
   const model = genAI.getGenerativeModel({
@@ -74,6 +77,12 @@ const Home = () => {
   }, []);
   console.log(blogs);
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/");
+  };
+
   const fetchBlog = async () => {
     const result = await axios.post("http://localhost:3000/fetchBlog");
     console.log(result.data.data);
@@ -88,8 +97,21 @@ const Home = () => {
     false,
     false,
   ]);
+  useEffect(() => {
+  const handleOutsideClick = (e) => {
+    if (!dropdownRef.current?.contains(e.target)) {
+      setVisible(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleOutsideClick);
+
+  return () => {
+    document.removeEventListener("mousedown", handleOutsideClick);
+  };
+}, []);
   return (
-    <div style={{ backgroundColor: "#09344c", height:"100vh", zIndex: 4 }}>
+    <div style={{ backgroundColor: "#09344c", height: "100vh", zIndex: 4 }}>
       <img
         style={{ position: "absolute", height: "100vh", opacity: 0.1 }}
         src={home}
@@ -191,35 +213,35 @@ const Home = () => {
               />
             )}
             <div
+              ref={dropdownRef}
               id="block"
               style={{
-                top: "30%",
+                top: "100%",
                 zIndex: 2,
-                backgroundColor: "transparent",
+                backgroundColor: "white",
                 display: visible ? "flex" : "none",
                 flexDirection: "column",
                 boxShadow: "0px 3px 10px rgba(48, 47, 47, 0.1)",
                 width: "13%",
-                borderRadius: 30,
                 position: "absolute",
-                right: "1%",
+                right: "2%",
                 backdropFilter: "blur(50px)",
+                borderRadius: "12px",
+                overflow: "hidden",
               }}
             >
               <div
                 onMouseEnter={() =>
                   setHover([true, false, false, false, false, false])
                 }
+                onClick={()=>{navigate("/Profile")}}
                 style={{
-                  backgroundColor: hover[0]
-                    ? "rgb(228, 228, 228)"
-                    : "transparent",
-                  cursor: "pointer",
-                  display: "flex",
-                  justifyContent: "center",
+                  backgroundColor: hover[0] ? "rgb(228, 228, 228)" : "white",
                   width: "100%",
                   borderBottom: "1px solid rgb(184, 182, 182)",
-                  color: "white",
+                  display: "flex",
+                  justifyContent: "center",
+                  cursor: "pointer",
                 }}
               >
                 <p style={{ fontFamily: "roboto" }}>Profile</p>
@@ -302,6 +324,7 @@ const Home = () => {
                 onMouseLeave={() =>
                   setHover([false, false, false, false, false, false])
                 }
+                onClick={handleLogout}
                 style={{
                   backgroundColor: hover[5] ? "rgb(228, 228, 228)" : "white",
                   cursor: "pointer",
@@ -316,7 +339,7 @@ const Home = () => {
             {/* <div><button onClick={() => navigate("/signup")} style={{cursor:"pointer",color:"white",backgroundColor:'rgb(128, 164, 206)',padding:10,borderRadius:8,fontFamily:'roboto',border:'none',marginRight:10,fontSize:15}}>Login</button></div> */}
           </div>
         </div>
-        <div
+        {/* <div
           id="block"
           style={{
             top: "10%",
@@ -426,6 +449,7 @@ const Home = () => {
             onMouseLeave={() =>
               setHover([false, false, false, false, false, false])
             }
+            onClick={handleLogout}
             style={{
               backgroundColor: hover[5] ? "rgb(228, 228, 228)" : "white",
               cursor: "pointer",
@@ -436,7 +460,7 @@ const Home = () => {
           >
             <p style={{ fontFamily: "roboto" }}>Sign out</p>
           </div>
-        </div>
+        </div> */}
       </div>
 
       <div
@@ -447,13 +471,23 @@ const Home = () => {
           flexDirection: "row",
           justifyContent: summary === "" ? "flex-start" : "space-around",
           paddingTop: 20,
-          
         }}
       >
-        <div style={{overflowY:"scroll" ,scrollbarWidth:"none", height: 600,display:"flex", flexDirection:"column", width: "60%" , gap : 40}}>
+        <div
+          style={{
+            overflowY: "scroll",
+            scrollbarWidth: "none",
+            height: 600,
+            display: "flex",
+            flexDirection: "column",
+            width: "60%",
+            gap: 40,
+          }}
+        >
           {blogs?.blogs?.map((element, index) => {
             return (
               <div
+                key={`${element?.title || "blog"}-${index}`}
                 onMouseEnter={() => {
                   console.log(element);
                   const temp = element.blogData.map((element, index2) => {
@@ -463,7 +497,11 @@ const Home = () => {
                   console.log(temp);
                   run(temp.map((item) => item.text).join(" "));
                 }}
-                onClick={()=>navigate("/show",{state:{blog : element,author : blogs.name}})}
+                onClick={() =>
+                  navigate("/show", {
+                    state: { blog: element, author: blogs.name },
+                  })
+                }
                 style={{
                   gap: 20,
                   zIndex: 4,
@@ -514,27 +552,36 @@ const Home = () => {
                   >
                     {element.title}
                   </h1>
-                  <div style={{height:'100px', width:"400px",overflow:"hidden"}}>
-                     {
-                  element.blogData.map((item,index3)=>{
-                    return(  
-                       <p
+                  <div
                     style={{
-                      width: "100%",
-                      fontSize: 16.5,
-                      color: "white",
-                      fontFamily: "roboto",
+                      height: "100px",
+                      width: "400px",
+                      overflow: "hidden",
                     }}
                   >
-                    {item.text && item.text}
-                  </p>)
-                
-                  })
-                 }
+                    {element.blogData.map((item, index3) => {
+                      return (
+                        <p
+                          style={{
+                            width: "100%",
+                            fontSize: 16.5,
+                            color: "white",
+                            fontFamily: "roboto",
+                          }}
+                        >
+                          {item.text && item.text}
+                        </p>
+                      );
+                    })}
                   </div>
-                
+
                   <div
-                    style={{ display: "flex", alignItems: "center", gap: 10 , marginTop: 10 }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      marginTop: 10,
+                    }}
                   >
                     <img
                       style={{ opacity: 0.7, height: 20, width: 30 }}

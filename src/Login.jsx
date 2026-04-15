@@ -11,7 +11,6 @@ import { useDispatch } from 'react-redux'
 import { addUser } from './blog'
 import { useNavigate } from 'react-router-dom'
 import pahad from './plain.jpg'
-import Google from './Google'
 
 const Login = () => {
   const [ userName , setUserName] = useState('')
@@ -32,7 +31,6 @@ const Login = () => {
       password : password,
       phoneNum : phoneNum,
     }))
-    navigate('/home')
     const result = 
     await axios.post('http://localhost:3000/signup',{
       userName : userName,
@@ -43,16 +41,16 @@ const Login = () => {
 
     })
     console.log(result.data)
-    if (result.data==='success')
+    if (result.data?.message === 'success' && result.data?.token)
       {    
+      localStorage.setItem('token', result.data.token)
       localStorage.setItem("email",email)
       localStorage.setItem("name",name)
       localStorage.setItem("userName",userName)
 
-      
-  toast.success('signup successful')
-  
-}
+      toast.success('signup successful')
+      navigate('/home')
+    }
   }
 
 
@@ -164,11 +162,7 @@ const Login = () => {
        </div>
        
       </div>
-      <div style={{ zIndex:3,display: 'flex', alignItems: 'center', margin: '20px 0' }}>
-  <span style={{ borderBottom: "1px solid white",color:'white',fontFamily:'roboto',margin: '0 10px' }}> OR</span>
-</div>
 
-    <Google/>
     </div>
   )
 }

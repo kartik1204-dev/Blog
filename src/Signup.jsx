@@ -7,9 +7,6 @@ import { useDispatch } from 'react-redux'
 import { addUser } from './blog';
 import chill from "./lamp2.jpg"
 import pahad from './plain.jpg'
-import Google from './Google';
-import { GoogleLogin } from '@react-oauth/google';
-import { GoogleOAuthProvider } from '@react-oauth/google';
 const Signup = () => {
 
   const dispatch = useDispatch()
@@ -22,6 +19,11 @@ if(password && password.length<6)setPassError("Password length must be greater t
   else setPassError(false)
     },[password])
     const handleSubmit = async function() {
+      if (!email || !password) {
+        toast.error('Please enter email and password')
+        return
+      }
+
       try{
         const result =
       await axios.post('http://localhost:3000/login',
@@ -32,16 +34,19 @@ if(password && password.length<6)setPassError("Password length must be greater t
    
 
         console.log(result)
-        if(result.data.success)
+        if(result.data.success && result.data.token)
         {   dispatch(addUser(email))
          localStorage.setItem('token', result.data.token); // store token
             localStorage.setItem("email",email)
             toast.success('Login Successful')
-          Navigate('/home')
+          Navigate('/home', { replace: true })
+        } else {
+          toast.error('Login failed. Please try again.')
         }
               }
        catch (err) {
     console.error(err);
+    toast.error(err?.response?.data?.error || 'Login failed')
   }
     }
   return (
@@ -54,16 +59,6 @@ if(password && password.length<6)setPassError("Password length must be greater t
       backgroundColor:'transparent',
       
     }}>
-           <GoogleOAuthProvider clientId="547421160715-02jor6h6vf41nd1fm6c4ohbsl977o888.apps.googleusercontent.com">
-        <GoogleLogin
-  onSuccess={credentialResponse => {
-    console.log(credentialResponse);
-  }}
-  onError={() => {
-    console.log('Login Failed');
-  }}
-/>
-</GoogleOAuthProvider>
       <img style={{position:'absolute' ,width:"100vw",
           height:"100vh",}} src={pahad} alt="" />
         <div style={{position:'absolute',height:"100vh",width:"100%",backgroundColor:"rgba(9,52,76,0.7)",zIndex:2,}}> </div>
@@ -127,14 +122,6 @@ onMouseLeave={(e)=>{
         cursor:'pointer'
       }}>Login </button>
     </div>
-    <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0' }}>
-  <hr style={{ flex: 1, border: 'none', borderTop: '1px solid white' }} />
-  <span style={{ color:'white',fontFamily:'roboto',margin: '0 10px' }}>or</span>
-  <hr style={{ width:200,flex: 1, borderTop: '1px solid white' }} />
-</div>
-
-    <Google/>
-
       </div>
 
     </div>

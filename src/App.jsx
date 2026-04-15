@@ -1,14 +1,21 @@
 import React, { useState } from 'react'
 import blog from './bnda.png'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import bubble from './bubble.mp4'
 import diamond from './diamond.mp4'
 import box from './box.mp4'
+import { hasValidToken } from './auth/token'
 const App = () => {
   const [ hover , setHover]=useState([false,false,false,false,false])
   const [getHover , setGetHover]=useState(false)
   const [readHover , setReadHover]=useState(false)
   const navigate = useNavigate()
+
+  // If user is already authenticated, open home directly.
+  if (hasValidToken()) {
+    return <Navigate to="/home" replace />
+  }
+
   return (
     <div style={{display:'flex',flexDirection:'column',justifyContent:'space-betweeen',height:'100vh'}}>
      <div style={{display:'flex', }}>
