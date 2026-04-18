@@ -9,7 +9,7 @@ import Login from './Login.jsx';
 import Home from './Home'
 import { Provider } from 'react-redux'
 import store from './store.js';
-import AddBlog from './addBlog.jsx';
+import CreateBlog from './CreateBlog.jsx';
 import Profile from './profile.jsx';
 import About from './About.jsx';
 import Membership from './Membership.jsx';
@@ -33,7 +33,8 @@ createRoot(document.getElementById('root')).render(
     <Route path="/Signup" element={<PublicRoute><Signup /></PublicRoute>} />
     <Route element={<PrivateRoute />}>
       <Route path='/home' element={<Home/>}/>
-      <Route path='/addBlog'element={<AddBlog/>}/>
+      <Route path='/addBlog'element={<CreateBlog/>}/>
+      <Route path='/edit/:id' element={<CreateBlog/>}/>
       <Route path='/profile'element={<Profile/>}/>
       <Route path='/blog'element={<Blog/>}/>
       <Route path = '/show' element={<Show/>}/>

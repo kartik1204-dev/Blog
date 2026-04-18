@@ -11,23 +11,67 @@ import laptop from "./laptop.png";
 import doddle from "./doddle2.svg";
 import cross from "./cross.svg";
 import { addUser } from "./adduser";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 const addBlog = () => {
   const userData = useSelector((state)=>state.users)
   console.log(userData.userData)
 
   
   const navigate = useNavigate()
+  const { id } = useParams()
+  const isEditMode = id !== undefined
+  const blogIndex = Number(id)
   const dispatch = useDispatch()
   const [hover, setHover] = useState("");
   const data = localStorage.getItem("email");
   console.log(data);
   const [title, setTitle] = useState("");
-  const [text, setText] = useState("");
   const [blogData, setblogData] = useState([{ text: "" }]);
+  const [isFetchingBlog, setIsFetchingBlog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   useEffect(() => {
     console.log("ajay beta", blogData);
   }, [blogData]);
+
+  useEffect(() => {
+    const fetchBlogById = async () => {
+      if (!isEditMode || Number.isNaN(blogIndex)) return;
+
+      try {
+        setIsFetchingBlog(true);
+        setErrorMessage("");
+
+        const res = await axios.post("http://localhost:3000/blog", {
+          email: data,
+        });
+
+        const blogs = res?.data?.data?.[0]?.blogs || [];
+        const selectedBlog = blogs[blogIndex];
+
+        if (!selectedBlog) {
+          setErrorMessage("Blog not found.");
+          return;
+        }
+
+        setTitle(selectedBlog?.title || "");
+        setblogData(
+          Array.isArray(selectedBlog?.blogData) && selectedBlog.blogData.length
+            ? selectedBlog.blogData
+            : [{ text: "" }]
+        );
+      } catch (error) {
+        console.error("Error fetching blog by id", error);
+        setErrorMessage("Could not load blog details.");
+      } finally {
+        setIsFetchingBlog(false);
+      }
+    };
+
+    fetchBlogById();
+  }, [isEditMode, blogIndex, data]);
+
   const handleOnChange = function (e) {
     const image = (e.target.files[0]);
     const reader= new FileReader()
@@ -53,22 +97,51 @@ const addBlog = () => {
   };
 
   const handlePublish = async function () {
-    dispatch(addUser({
-      title : title,
-      blogData : blogData,
-      name : userData.userData.name
-    }))
-    
-    const result = await axios.post("http://localhost:3000/createBlog", {
-      email: data,
-      blogData : {
-        blogData : blogData,
+    try {
+      setIsSubmitting(true);
+      setStatusMessage("");
+      setErrorMessage("");
+
+      if (isEditMode) {
+        const contentItem = blogData.find((item) => Object.prototype.hasOwnProperty.call(item, "text"));
+        const imageItem = blogData.find((item) => Object.prototype.hasOwnProperty.call(item, "image"));
+
+        await axios.put(`http://localhost:3000/updateBlog/${data}/${blogIndex}`, {
+          title,
+          content: contentItem?.text || "",
+          image: imageItem?.image || "",
+        });
+
+        setStatusMessage("Blog updated successfully.");
+        toast.success("Blog updated successfully");
+        navigate("/blog");
+        return;
+      }
+
+      dispatch(addUser({
         title : title,
-      },
-    });
-    if (result.data === "success") {
-      toast.success("Blog created successfully");
-      navigate("/home")
+        blogData : blogData,
+        name : userData.userData.name
+      }))
+
+      const result = await axios.post("http://localhost:3000/createBlog", {
+        email: data,
+        blogData : {
+          blogData : blogData,
+          title : title,
+        },
+      });
+      if (result.data === "success") {
+        setStatusMessage("Blog created successfully.");
+        toast.success("Blog created successfully");
+        navigate("/home")
+      }
+    } catch (error) {
+      console.error("Error publishing blog", error);
+      setErrorMessage(isEditMode ? "Could not update blog." : "Could not create blog.");
+      toast.error(isEditMode ? "Could not update blog" : "Could not create blog");
+    } finally {
+      setIsSubmitting(false);
     }
   };
   return (
@@ -86,6 +159,13 @@ const addBlog = () => {
     >
    
       <ToastContainer />
+      {statusMessage && (
+        <p style={{ color: "#6dff97", fontFamily: "roboto", marginTop: 10 }}>{statusMessage}</p>
+      )}
+      {errorMessage && (
+        <p style={{ color: "#ff9f9f", fontFamily: "roboto", marginTop: 10 }}>{errorMessage}</p>
+      )}
+
       <div
         id="blog-div"
         style={{
@@ -112,6 +192,7 @@ const addBlog = () => {
               onMouseLeave={() => setHover(false)}
               onMouseEnter={() => setHover(true)}
               onClick={handlePublish}
+              disabled={isSubmitting || isFetchingBlog}
               style={{
                 backgroundColor: hover
                   ? "rgb(128, 164, 206)"
@@ -120,6 +201,7 @@ const addBlog = () => {
                 border: "1px solid rgb(128, 164, 206)",
                 color: hover ? "white" : "rgb(128, 164, 206)",
                 cursor: "pointer",
+                opacity: isSubmitting || isFetchingBlog ? 0.7 : 1,
                 paddingLeft: 20,
                 paddingRight: 20,
                 paddingTop: 5,
@@ -127,7 +209,7 @@ const addBlog = () => {
                 fontFamily: "roboto",
               }}
             >
-              Publish
+              {isFetchingBlog ? "Loading..." : isSubmitting ? (isEditMode ? "Updating..." : "Publishing...") : isEditMode ? "Update" : "Publish"}
             </button>
             <img style={{ height: 20, width: 20 }} src={dots} />
             <img style={{ height: 18 }} src={bell} />
@@ -250,6 +332,7 @@ const addBlog = () => {
             <input
               onChange={(e) => setTitle(e.target.value)}
               value={title}
+              disabled={isFetchingBlog}
               style={{
                 fontFamily: "roboto",
                 color: "rgb(128, 164, 206)",
@@ -294,6 +377,7 @@ const addBlog = () => {
                 <div key={index} style={{ width: "100%" }}>
                   {(item?.text || item?.text === "") && (
                     <textarea
+                      disabled={isFetchingBlog}
                       rows={4}
                       cols={50}
                       style={{
