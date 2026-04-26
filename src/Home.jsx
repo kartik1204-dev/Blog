@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import bell from "./bell.svg";
 import page from "./page.svg";
 import logo from "./logo.jpeg";
@@ -14,62 +14,50 @@ import { addBlog } from "./blog";
 import Blog from "./blog";
 import axios from "axios";
 import home from "./home.svg";
-import {
-  GoogleGenerativeAI,
-  HarmCategory,
-  HarmBlockThreshold,
-} from "@google/generative-ai";
-import { useEffect } from "react";
-import { useRef } from "react";
 
 const Home = () => {
   const [blogs, setBlogs] = useState([]);
-  const image = useSelector((state) => state.users.image);
-  const data = useSelector((state) => state.users.name);
+  const userData = useSelector((state) => state.users.userData);
+  const image = userData?.image || "";
+  const data = userData?.name || "";
   const [summary, setSummary] = useState("");
+  const [summaryCache, setSummaryCache] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+  const [blogAvatarError, setBlogAvatarError] = useState(false);
   const dropdownRef = useRef(null);
+  const debounceRef = useRef(null);
 
   useEffect(() => {
     console.log("hello", blogs);
   }, [blogs]);
 
-  /*
-   * Install the Generative AI SDK
-   *
-   * $ npm install @google/generative-ai
-   */
+  async function run(text, blogId) {
+    if (!text || !blogId) return;
 
-  const genAI = new GoogleGenerativeAI(
-    "AIzaSyBXLyOTVyAYEjuO9MrzB8mIVg1TiP18NM4",
-  );
+    if (summaryCache[blogId]) {
+      setSummary(summaryCache[blogId]);
+      return;
+    }
 
-  const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
-  });
+    try {
+      setLoading(true);
+      const result = await axios.post("http://localhost:3000/summarize", {
+        text,
+      });
 
-  const generationConfig = {
-    temperature: 1,
-    topP: 0.95,
-    topK: 64,
-    maxOutputTokens: 8192,
-    responseMimeType: "text/plain",
-  };
-
-  async function run(prompt) {
-    console.log(prompt);
-    const chatSession = model.startChat({
-      generationConfig,
-      // safetySettings: Adjust safety settings
-      // See https://ai.google.dev/gemini-api/docs/safety-settings
-      history: [],
-    });
-
-    const result = await chatSession.sendMessage(
-      "Write It Summary... " + prompt
-    );
-    console.log(result.response.text());
-    setSummary(result.response.text());
-    return result.response.text();
+      const generatedSummary = result?.data?.summary || "No summary available.";
+      setSummary(generatedSummary);
+      setSummaryCache((prev) => ({
+        ...prev,
+        [blogId]: generatedSummary,
+      }));
+    } catch (error) {
+      console.error("Summary API error", error);
+      setSummary("Unable to load summary right now. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
   useEffect(() => {
     fetchBlog();
@@ -107,6 +95,9 @@ const Home = () => {
   document.addEventListener("mousedown", handleOutsideClick);
 
   return () => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
     document.removeEventListener("mousedown", handleOutsideClick);
   };
 }, []);
@@ -185,56 +176,70 @@ const Home = () => {
                 Write
               </p>
             </div>
-            {image == null ? (
-              <div
-                onClick={() => setVisible(true)}
-                style={{
-                  backgroundColor: "rgb(128, 164, 206)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: 55,
-                  width: 55,
-                  borderRadius: "50%",
-                  color: "white",
-                  fontFamily: "roboto",
-                  fontSize: "25px",
-                  fontWeight: "bold",
-                  textTransform: "uppercase",
-                }}
-                id="gmail"
-              >
-                {data ? data.charAt(0).toUpperCase() : "?"}
-              </div>
-            ) : (
-              <img
-                style={{ height: 50, width: 50, borderRadius: "50%" }}
-                src={image}
-              />
-            )}
             <div
               ref={dropdownRef}
-              id="block"
-              style={{
-                top: "100%",
-                zIndex: 2,
-                backgroundColor: "white",
-                display: visible ? "flex" : "none",
-                flexDirection: "column",
-                boxShadow: "0px 3px 10px rgba(48, 47, 47, 0.1)",
-                width: "13%",
-                position: "absolute",
-                right: "2%",
-                backdropFilter: "blur(50px)",
-                borderRadius: "12px",
-                overflow: "hidden",
-              }}
+              style={{ position: "relative", display: "flex", alignItems: "center" }}
             >
+              {!image ? (
+                <div
+                  onClick={() => setVisible((prev) => !prev)}
+                  style={{
+                    backgroundColor: "rgb(128, 164, 206)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: 55,
+                    width: 55,
+                    borderRadius: "50%",
+                    color: "white",
+                    fontFamily: "roboto",
+                    fontSize: "25px",
+                    fontWeight: "bold",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                  }}
+                  id="gmail"
+                >
+                  {data ? data.charAt(0).toUpperCase() : "U"}
+                </div>
+              ) : (
+                <img
+                  onClick={() => setVisible((prev) => !prev)}
+                  style={{
+                    height: 50,
+                    width: 50,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: "2px solid rgb(128, 164, 206)",
+                    backgroundColor: "rgb(128, 164, 206)",
+                    cursor: "pointer",
+                  }}
+                  src={avatarError ? logo : image}
+                  onError={() => setAvatarError(true)}
+                />
+              )}
+              <div
+                id="block"
+                style={{
+                  top: "100%",
+                  zIndex: 2,
+                  backgroundColor: "white",
+                  display: visible ? "flex" : "none",
+                  flexDirection: "column",
+                  boxShadow: "0px 3px 10px rgba(48, 47, 47, 0.1)",
+                  width: 180,
+                  position: "absolute",
+                  right: 0,
+                  backdropFilter: "blur(50px)",
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                }}
+              >
               <div
                 onMouseEnter={() =>
                   setHover([true, false, false, false, false, false])
                 }
-                onClick={()=>{navigate("/Profile")}}
+                onClick={()=>{navigate("/profile")}}
                 style={{
                   backgroundColor: hover[0] ? "rgb(228, 228, 228)" : "white",
                   width: "100%",
@@ -335,6 +340,7 @@ const Home = () => {
               >
                 <p style={{ fontFamily: "roboto" }}>Sign out</p>
               </div>
+            </div>
             </div>
             {/* <div><button onClick={() => navigate("/signup")} style={{cursor:"pointer",color:"white",backgroundColor:'rgb(128, 164, 206)',padding:10,borderRadius:8,fontFamily:'roboto',border:'none',marginRight:10,fontSize:15}}>Login</button></div> */}
           </div>
@@ -489,13 +495,26 @@ const Home = () => {
               <div
                 key={`${element?.title || "blog"}-${index}`}
                 onMouseEnter={() => {
-                  console.log(element);
-                  const temp = element.blogData.map((element, index2) => {
-                    if (element.text) return element;
-                    else return "";
-                  });
-                  console.log(temp);
-                  run(temp.map((item) => item.text).join(" "));
+                  const blogId = element?._id || `${element?.title || "blog"}-${index}`;
+
+                  if (debounceRef.current) {
+                    clearTimeout(debounceRef.current);
+                  }
+
+                  debounceRef.current = setTimeout(() => {
+                    const text = (element?.blogData || [])
+                      .filter((item) => item?.text)
+                      .map((item) => item.text)
+                      .join(" ")
+                      .trim();
+
+                    run(text, blogId);
+                  }, 700);
+                }}
+                onMouseLeave={() => {
+                  if (debounceRef.current) {
+                    clearTimeout(debounceRef.current);
+                  }
                 }}
                 onClick={() =>
                   navigate("/show", {
@@ -518,26 +537,39 @@ const Home = () => {
                   <div
                     style={{ display: "flex", gap: 20, alignItems: "center" }}
                   >
-                    <div
-                      onClick={() => setVisible(true)}
-                      style={{
-                        backgroundColor: "rgb(128, 164, 206)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: 35,
-                        width: 35,
-                        borderRadius: "50%",
-                        color: "white",
-                        fontFamily: "roboto",
-                        fontSize: "15px",
-                        fontWeight: "bold",
-                        textTransform: "uppercase",
-                      }}
-                      id="gmail"
-                    >
-                      {blogs.image ? "" : blogs?.name?.charAt(0)?.toUpperCase()}
-                    </div>
+                    {!blogs?.image || blogAvatarError ? (
+                      <div
+                        style={{
+                          backgroundColor: "rgb(128, 164, 206)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          height: 35,
+                          width: 35,
+                          borderRadius: "50%",
+                          color: "white",
+                          fontFamily: "roboto",
+                          fontSize: "15px",
+                          fontWeight: "bold",
+                          textTransform: "uppercase",
+                        }}
+                        id="gmail"
+                      >
+                        {blogs?.name ? blogs.name.charAt(0).toUpperCase() : "U"}
+                      </div>
+                    ) : (
+                      <img
+                        src={blogs.image}
+                        onError={() => setBlogAvatarError(true)}
+                        style={{
+                          height: 35,
+                          width: 35,
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          border: "1px solid rgb(128, 164, 206)",
+                        }}
+                      />
+                    )}
                     <p style={{ color: "white", fontFamily: "roboto" }}>
                       {blogs.name}
                     </p>
@@ -603,10 +635,9 @@ const Home = () => {
                   </div>
                 </div>
                 <div>
-                  <img
-                    style={{ height: 200 }}
-                    src={element.blogData[1].image}
-                  />
+                  {element.blogData?.[1]?.image ? (
+                    <img style={{ height: 200 }} src={element.blogData?.[1]?.image} />
+                  ) : null}
                 </div>
               </div>
             );
@@ -614,7 +645,7 @@ const Home = () => {
         </div>
         <div
           style={{
-            display: summary != "" ? "flex" : "none",
+            display: summary !== "" || loading ? "flex" : "none",
             justifyContent: "center",
             alignItems: "center",
             backgroundColor: "rgba(13, 29, 47, 0.5)",
@@ -626,7 +657,7 @@ const Home = () => {
           }}
         >
           <p style={{ color: "white", fontFamily: "Segoe UI, sans-serif" }}>
-            {summary}
+            {loading ? "Loading..." : summary}
           </p>
         </div>
       </div>

@@ -3,9 +3,13 @@ const express = require('express')          // Express framework for creating se
 const mongoose = require ('mongoose')       // Mongoose for MongoDB database connection
 const cors=require('cors')                  // CORS to allow cross-origin requests
 const bodyParser = require('body-parser');  // Middleware to handle JSON data
+const dotenv = require('dotenv')
 const app =new express()
 const jwt = require("jsonwebtoken")         // JWT for authentication
 const bcrypt = require("bcryptjs")          // bcrypt compare support for hashed legacy users
+const { GoogleGenerativeAI } = require("@google/generative-ai")
+
+dotenv.config()
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 
@@ -28,6 +32,7 @@ const user=mongoose.Schema({
   username:String,
   name:String,
   phone:String,
+  image:String,
   blogs: Array,   // stores blogs created by user
 })
 
@@ -65,7 +70,8 @@ app.post('/signup',async(req , res)=>{
     password : req.body.password,
     username : req.body.userName,
     name : req.body.name,
-    phone: req.body.phoneNum
+    phone: req.body.phoneNum,
+    image: req.body.image || ""
   })
 
   // Save user in MongoDB
@@ -77,7 +83,17 @@ app.post('/signup',async(req , res)=>{
       {expiresIn : "2h"} // Token expires in 2 hours
     )
     console.log('success')
-    res.json({ message : 'success', token })
+    res.json({
+      message : 'success',
+      token,
+      user: {
+        email: newUser.email,
+        name: newUser.name,
+        userName: newUser.username,
+        phoneNum: newUser.phone,
+        image: newUser.image || "",
+      },
+    })
   }).catch((err)=>{res.json(err)})
 })
 
@@ -118,7 +134,17 @@ app.post('/login',async(req,res)=>{
         { expiresIn : '2h'}
       )
       console.log('signed')
-      return res.json({ success: true , token : token })
+      return res.json({
+        success: true,
+        token : token,
+        user: {
+          email: userData.email,
+          name: userData.name,
+          userName: userData.username,
+          phoneNum: userData.phone,
+          image: userData.image || "",
+        },
+      })
     }
 
     // Invalid password
@@ -144,6 +170,93 @@ app.post('/blog',async(req,res)=>{
   const result = await User.find({email:email})
   console.log("develop",result)
   res.json({ data:result })
+})
+
+app.put('/updateProfile', async (req, res) => {
+  try {
+    const { email, name, image } = req.body || {}
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' })
+    }
+
+    const updateData = {}
+    if (typeof name === 'string') {
+      updateData.name = name.trim()
+    }
+    if (typeof image === 'string') {
+      updateData.image = image
+    }
+
+    await User.updateOne(
+      { email },
+      { $set: updateData }
+    )
+
+    const updatedUser = await User.findOne({ email })
+
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
+        email: updatedUser?.email || email,
+        name: updatedUser?.name || '',
+        userName: updatedUser?.username || '',
+        phoneNum: updatedUser?.phone || '',
+        image: updatedUser?.image || '',
+      },
+    })
+  } catch (error) {
+    console.error('Update profile error', error)
+    return res.status(500).json({ error: 'Failed to update profile' })
+  }
+})
+
+app.post('/summarize', async (req, res) => {
+  try {
+    const { text, limit } = req.body || {}
+
+    if (typeof text !== 'string' || !text.trim()) {
+      return res.status(400).json({ error: 'Text is required' })
+    }
+
+    let maxWords = 50
+    if (limit !== undefined) {
+      const parsedLimit = Number(limit)
+
+      if (!Number.isInteger(parsedLimit) || parsedLimit < 10 || parsedLimit > 150) {
+        return res.status(400).json({
+          error: 'limit must be an integer between 10 and 150',
+        })
+      }
+
+      maxWords = parsedLimit
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('Gemini API key is not configured')
+      return res.status(500).json({ error: 'Gemini API key is not configured' })
+    }
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+
+    const prompt = [
+      `Summarize the following blog in 2-3 sentences or maximum ${maxWords} words.`,
+      'Keep it clear, concise, and easy to read.',
+      'Do not repeat ideas and include only meaningful key points.',
+      '',
+      text,
+    ].join('\n')
+
+    const result = await model.generateContent(prompt)
+    const summary = result.response.text().trim()
+    console.log('Summary generated:', summary)
+    return res.json({ summary })
+  } catch (error) {
+    console.error('Summarize error', error)
+    return res.status(500).json({ error: 'Failed to generate summary' })
+  }
 })
 
 // API for delete blog 

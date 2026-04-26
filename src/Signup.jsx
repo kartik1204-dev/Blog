@@ -35,9 +35,17 @@ if(password && password.length<6)setPassError("Password length must be greater t
 
         console.log(result)
         if(result.data.success && result.data.token)
-        {   dispatch(addUser(email))
+        {
+          dispatch(addUser(result.data.user || { email }))
          localStorage.setItem('token', result.data.token); // store token
-            localStorage.setItem("email",email)
+            localStorage.setItem("email", result.data?.user?.email || email)
+            localStorage.setItem("name", result.data?.user?.name || "")
+            localStorage.setItem("userName", result.data?.user?.userName || "")
+            if (result.data?.user?.image) {
+              localStorage.setItem("image", result.data.user.image)
+            } else {
+              localStorage.removeItem("image")
+            }
             toast.success('Login Successful')
           Navigate('/home', { replace: true })
         } else {
