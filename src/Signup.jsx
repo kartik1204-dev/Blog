@@ -7,6 +7,7 @@ import { useDispatch } from 'react-redux'
 import { addUser } from './blog';
 import chill from "./lamp2.jpg"
 import pahad from './plain.jpg'
+import { url } from "./api";
 const Signup = () => {
 
   const dispatch = useDispatch()
@@ -26,7 +27,7 @@ if(password && password.length<6)setPassError("Password length must be greater t
 
       try{
         const result =
-      await axios.post('http://localhost:3000/login',
+      await axios.post(`${url}/login`,
         {
         email : email,
       password : password,

@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useDispatch } from "react-redux";
 import { addUser } from "./blog";
 import { useNavigate } from "react-router-dom";
+import { url } from "./api";
 import pahad from "./plain.jpg";
 
 const inputStyle = {
@@ -68,7 +69,7 @@ const Login = () => {
         }),
       );
 
-      const result = await axios.post("http://localhost:3000/signup", {
+      const result = await axios.post(`${url}/signup`, {
         userName,
         name,
         email,

@@ -14,6 +14,7 @@ import { addBlog } from "./blog";
 import Blog from "./blog";
 import axios from "axios";
 import home from "./home.svg";
+import { url } from "./api";
 
 const Home = () => {
   const [blogs, setBlogs] = useState([]);
@@ -42,7 +43,7 @@ const Home = () => {
 
     try {
       setLoading(true);
-      const result = await axios.post("http://localhost:3000/summarize", {
+      const result = await axios.post(`${url}/summarize`, {
         text,
       });
 
@@ -72,7 +73,7 @@ const Home = () => {
   };
 
   const fetchBlog = async () => {
-    const result = await axios.post("http://localhost:3000/fetchBlog");
+    const result = await axios.post(`${url}/fetchBlog`);
     console.log(result.data.data);
     setBlogs(result.data.data[0]);
   };

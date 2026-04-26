@@ -12,6 +12,7 @@ import doddle from "./doddle2.svg";
 import cross from "./cross.svg";
 import { addUser } from "./adduser";
 import { useNavigate, useParams } from "react-router-dom";
+import { url } from "./api";
 const addBlog = () => {
   const userData = useSelector((state)=>state.users)
   console.log(userData.userData)
@@ -43,7 +44,7 @@ const addBlog = () => {
         setIsFetchingBlog(true);
         setErrorMessage("");
 
-        const res = await axios.post("http://localhost:3000/blog", {
+        const res = await axios.post(`${url}/blog`, {
           email: data,
         });
 
@@ -106,7 +107,7 @@ const addBlog = () => {
         const contentItem = blogData.find((item) => Object.prototype.hasOwnProperty.call(item, "text"));
         const imageItem = blogData.find((item) => Object.prototype.hasOwnProperty.call(item, "image"));
 
-        await axios.put(`http://localhost:3000/updateBlog/${data}/${blogIndex}`, {
+        await axios.put(`${url}/updateBlog/${data}/${blogIndex}`, {
           title,
           content: contentItem?.text || "",
           image: imageItem?.image || "",
@@ -124,7 +125,7 @@ const addBlog = () => {
         name : userData.userData.name
       }))
 
-      const result = await axios.post("http://localhost:3000/createBlog", {
+      const result = await axios.post(`${url}/createBlog`, {
         email: data,
         blogData : {
           blogData : blogData,

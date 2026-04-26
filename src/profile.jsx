@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { url } from "./api";
 
 const profile = () => {
   const userData = useSelector((state) => state.users.userData);
@@ -33,7 +34,7 @@ const profile = () => {
 
       try {
         setIsLoadingProfile(true);
-        const result = await axios.post("http://localhost:3000/blog", { email });
+        const result = await axios.post(`${url}/blog`, { email });
         const serverUser = result?.data?.data?.[0];
 
         if (!serverUser) return;
@@ -95,7 +96,7 @@ const profile = () => {
 
       setIsSaving(true);
 
-      const result = await axios.put("http://localhost:3000/updateProfile", {
+      const result = await axios.put(`${url}/updateProfile`, {
         email,
         name: name.trim(),
         image: image || "",

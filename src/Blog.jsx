@@ -4,6 +4,7 @@ import like from "./like.svg";
 import comment from "./comment.svg";
 import bookmark from "./bookmark.svg";
 import { useNavigate } from "react-router-dom";
+import { url } from "./api";
 const Blog = () => {
   const [myBlogs, setMyBlogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,7 +21,7 @@ const Blog = () => {
     try {
       setIsLoading(true);
       setErrorMessage("");
-      const res = await axios.post("http://localhost:3000/blog", {
+      const res = await axios.post(`${url}/blog`, {
         email: email,
       });
       setMyBlogs(res?.data?.data?.[0]?.blogs || []);
@@ -47,7 +48,7 @@ const Blog = () => {
       setStatusMessage("");
       setErrorMessage("");
 
-      await axios.delete(`http://localhost:3000/deleteBlog/${email}/${index}`);
+      await axios.delete(`${url}/deleteBlog/${email}/${index}`);
 
       setMyBlogs((prev) => prev.filter((_, blogIndex) => blogIndex !== index));
       setStatusMessage("Blog deleted successfully.");
