@@ -223,7 +223,6 @@ app.post('/summarize', async (req, res) => {
     let maxWords = 50
     if (limit !== undefined) {
       const parsedLimit = Number(limit)
-
       if (!Number.isInteger(parsedLimit) || parsedLimit < 10 || parsedLimit > 150) {
         return res.status(400).json({
           error: 'limit must be an integer between 10 and 150',
