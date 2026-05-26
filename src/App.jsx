@@ -61,7 +61,7 @@ const App = () => {
         <button 
         onMouseEnter={()=>setGetHover(true)}
         onMouseLeave={()=>setGetHover(false)}
-        onClick={()=>navigate('/Signup')} 
+        onClick={()=>navigate('/signup')} 
         style={{borderRadius:10,cursor:'pointer', backgroundColor: getHover ?'rgb(128, 164, 206)':'transparent',border:'1px solid white',color:'white',height:'50%',width:'30%',padding:10}}>
           Get started
         </button>

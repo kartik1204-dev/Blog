@@ -92,7 +92,7 @@ if(password && password.length<6)setPassError("Password length must be greater t
       }}>
       <div>
         <h1 style={{display:'inline',color:'white',fontFamily:'roboto'}}>Sign In</h1>
-        <p style={{color:'white',fontFamily:'roboto'}}>Not registered yet ? <span onClick={()=>Navigate('/Login')} style={{color:'rgb(128, 164, 206)',cursor:'pointer',fontFamily:'roboto'}}>Sign up</span></p>
+        <p style={{color:'white',fontFamily:'roboto'}}>Not registered yet ? <span onClick={()=>Navigate('/login')} style={{color:'rgb(128, 164, 206)',cursor:'pointer',fontFamily:'roboto'}}>Sign up</span></p>
       </div>
     <div>
       <p style={{color:'white',fontFamily:'roboto'}}>Email</p>

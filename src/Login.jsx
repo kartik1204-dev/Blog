@@ -210,7 +210,7 @@ const Login = () => {
 
         <p style={{ color: "rgb(194, 214, 237)", marginTop: 8, marginBottom: 0, fontSize: 14, textAlign: "center" }}>
           Already have an account?{" "}
-          <span onClick={() => navigate("/Signup")} style={{ cursor: "pointer", textDecoration: "underline", fontWeight: 600 }}>
+          <span onClick={() => navigate("/signup")} style={{ cursor: "pointer", textDecoration: "underline", fontWeight: 600 }}>
             Sign in
           </span>
         </p>

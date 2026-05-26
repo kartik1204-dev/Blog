@@ -29,8 +29,8 @@ createRoot(document.getElementById('root')).render(
     <Routes>
     {/* <Route path="/" element={<HomePage />} /> */}
     <Route path='/' element={<App/>}/>
-    <Route path="/Login" element={<PublicRoute><Login /></PublicRoute>} />
-    <Route path="/Signup" element={<PublicRoute><Signup /></PublicRoute>} />
+    <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+    <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
     <Route element={<PrivateRoute />}>
       <Route path='/home' element={<Home/>}/>
       <Route path='/addBlog'element={<CreateBlog/>}/>

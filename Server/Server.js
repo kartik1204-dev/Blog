@@ -12,6 +12,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai")
 dotenv.config()
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+const normalizeEmail = (value) => String(value || "").trim().toLowerCase()
 
 // Enable CORS so frontend can access backend API
 app.use(cors({origin:'*'}))
@@ -48,9 +49,10 @@ app.post('/createBlog', async(req , res)=>
   console.log("reached",req.body.blogData)
  try {
   // Find user by email and push new blog inside their blogs array
+  // Push at the beginning so newest blogs appear first
   const result = await User.updateOne(
-    {email :req.body.email },
-    { $push: { blogs :  req.body.blogData } }
+    { email: req.body.email },
+    { $push: { blogs: { $each: [req.body.blogData], $position: 0 } } }
   )
   res.json('success')
   console.log("result",result)
@@ -64,13 +66,28 @@ app.post('/createBlog', async(req , res)=>
 app.post('/signup',async(req , res)=>{
   console.log("reached",req.body)
 
+  const email = normalizeEmail(req.body.email)
+  const password = String(req.body.password || "")
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' })
+  }
+
+  const existingUser = await User.findOne({
+    email: { $regex: new RegExp(`^\\s*${escapeRegex(email)}\\s*$`, 'i') },
+  })
+
+  if (existingUser) {
+    return res.status(409).json({ error: 'User already exists' })
+  }
+
   // Create a new user object
   const newUser = new User({
-    email : req.body.email,
-    password : req.body.password,
-    username : req.body.userName,
-    name : req.body.name,
-    phone: req.body.phoneNum,
+    email,
+    password,
+    username : String(req.body.userName || "").trim(),
+    name : String(req.body.name || "").trim(),
+    phone: String(req.body.phoneNum || "").trim(),
     image: req.body.image || ""
   })
 
@@ -102,7 +119,7 @@ app.post('/signup',async(req , res)=>{
 app.post('/login',async(req,res)=>{
   console.log("hi",req.body)
   try {
-    const email = String(req.body.email || "").trim()
+    const email = normalizeEmail(req.body.email)
     const password = String(req.body.password || "")
 
     if (!email || !password) {
@@ -113,7 +130,7 @@ app.post('/login',async(req,res)=>{
 
     // Find one user with email
     const userData = await User.findOne({
-      email : { $regex: new RegExp(`^${escapedEmail}$`, "i") },
+      email : { $regex: new RegExp(`^\\s*${escapedEmail}\\s*$`, "i") },
     })
 
     // If no user found

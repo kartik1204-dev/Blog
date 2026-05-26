@@ -74,27 +74,31 @@ const addBlog = () => {
   }, [isEditMode, blogIndex, data]);
 
   const handleOnChange = function (e) {
-    const image = (e.target.files[0]);
-    const reader= new FileReader()
-    reader.onloadend=()=>{
-      const base64 = reader.result
-      console.log(base64)
-      setblogData((prev) => [
-        ...prev,
-        {
-          image: base64,
-        },
-      ]);
-      setblogData((prev) => [
-        ...prev,
-        {
-          text: "",
-        },
-      ]);
-    }
-    reader.readAsDataURL(image)
+    const file = e?.target?.files && e.target.files[0];
+    if (!file) return;
 
-    
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result;
+        // Avoid adding duplicate empty text blocks: if last item is empty text, just append image after it
+        setblogData((prev) => {
+          const updated = Array.isArray(prev) ? [...prev] : [];
+          // If last item is an empty text block, insert image before that
+          const last = updated[updated.length - 1];
+          if (last && Object.prototype.hasOwnProperty.call(last, 'text') && (!last.text || last.text.trim() === '')) {
+            // insert image before last
+            return [...updated.slice(0, -1), { image: base64 }, last];
+          }
+          return [...updated, { image: base64 }, { text: '' }];
+        });
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error reading file', err);
+      toast.error('Could not read selected file');
+    }
+
   };
 
   const handlePublish = async function () {
@@ -118,18 +122,40 @@ const addBlog = () => {
         navigate("/blog");
         return;
       }
+      // sanitize blogData: ensure each item is an object with optional text/image
+      const sanitizedBlogData = (Array.isArray(blogData) ? blogData : [])
+        .map((item) => {
+          if (!item) return null;
+          if (typeof item === 'string') return { text: item };
+          const sanitized = {};
+          if (Object.prototype.hasOwnProperty.call(item, 'text')) {
+            sanitized.text = item.text != null ? String(item.text) : '';
+          }
+          if (Object.prototype.hasOwnProperty.call(item, 'image')) {
+            sanitized.image = item.image || undefined;
+          }
+          return sanitized;
+        })
+        .filter(Boolean);
 
-      dispatch(addUser({
-        title : title,
-        blogData : blogData,
-        name : userData.userData.name
-      }))
+      // basic validation: require at least a title or some content
+      const hasContent = sanitizedBlogData.some((i) => (i.text && i.text.trim()) || i.image);
+      if (!title && !hasContent) {
+        setErrorMessage("Please provide a title or some content before publishing.");
+        toast.error("Please provide a title or some content before publishing.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Do not optimistic-update local store to avoid ordering mismatch;
+      // rely on server-side ordering and Home fetch to show newest-first.
 
       const result = await axios.post(`${url}/createBlog`, {
         email: data,
-        blogData : {
-          blogData : blogData,
-          title : title,
+        blogData: {
+          title: title,
+          blogData: sanitizedBlogData,
+          createdAt: new Date().toISOString(),
         },
       });
       if (result.data === "success") {
@@ -392,12 +418,14 @@ const addBlog = () => {
                       value={item.text}
                       placeholder="type here..."
                       onChange={(e) => {
-                        console.log(e.target.value);
+                        const value = e.target.value;
                         setblogData((prev) => {
                           const updatedArray = [...prev];
-
-                          updatedArray[index] = { text: e.target.value };
-                          console.log(updatedArray, "ks");
+                          // Preserve any existing fields (image) and only update text
+                          updatedArray[index] = {
+                            ...(updatedArray[index] || {}),
+                            text: value,
+                          };
                           return updatedArray;
                         });
                       }}
@@ -413,13 +441,7 @@ const addBlog = () => {
                       }}
                     >
                        <div
-                        onClick={() => setblogData((prev) => {
-                          return prev.map((item,index2)=>{
-                            if(index!=index2)
-                              return item
-
-                          })
-                        })}
+                        onClick={() => setblogData((prev) => prev.filter((_, i) => i !== index))}
                         style={{
                           right: "30%",
                           position: "absolute",

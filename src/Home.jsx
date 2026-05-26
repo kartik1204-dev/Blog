@@ -17,16 +17,20 @@ import home from "./home.svg";
 import { url } from "./api";
 
 const Home = () => {
-  const [blogs, setBlogs] = useState([]);
+  const [blogs, setBlogs] = useState({ blogs: [] });
   const userData = useSelector((state) => state.users.userData);
   const image = userData?.image || "";
   const data = userData?.name || "";
   const [summary, setSummary] = useState("");
   const [summaryCache, setSummaryCache] = useState({});
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  const [postsToShow, setPostsToShow] = useState(5);
   const [avatarError, setAvatarError] = useState(false);
   const [blogAvatarError, setBlogAvatarError] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const dropdownRef = useRef(null);
+  const postsContainerRef = useRef(null);
   const debounceRef = useRef(null);
 
   useEffect(() => {
@@ -73,9 +77,37 @@ const Home = () => {
   };
 
   const fetchBlog = async () => {
-    const result = await axios.post(`${url}/fetchBlog`);
-    console.log(result.data.data);
-    setBlogs(result.data.data[0]);
+    try {
+      setFetching(true);
+      const result = await axios.post(`${url}/fetchBlog`);
+      // result.data.data is expected to be an array of users; aggregate their blogs
+      const users = result?.data?.data || [];
+      const posts = [];
+      users.forEach((u) => {
+        const uBlogs = Array.isArray(u.blogs) ? u.blogs : [];
+        uBlogs.forEach((b) => {
+          posts.push({
+            ...b,
+            authorName: u.name || "",
+            authorImage: u.image || "",
+          });
+        });
+      });
+
+      // sort newest first by createdAt if available
+      posts.sort((a, b) => {
+        const ta = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tb = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return tb - ta;
+      });
+
+      setBlogs({ blogs: posts });
+    } catch (err) {
+      console.error('Error fetching blogs', err);
+      setBlogs({ blogs: [] });
+    } finally {
+      setFetching(false);
+    }
   };
   const [visible, setVisible] = useState(false);
   const [hover, setHover] = useState([
@@ -102,6 +134,23 @@ const Home = () => {
     document.removeEventListener("mousedown", handleOutsideClick);
   };
 }, []);
+  const handleScroll = () => {
+    const container = postsContainerRef.current;
+    if (!container) return;
+    const { scrollTop, clientHeight, scrollHeight } = container;
+    const threshold = 120; // px from bottom
+    if (scrollTop + clientHeight >= scrollHeight - threshold) {
+      const total = Array.isArray(blogs?.blogs) ? blogs.blogs.length : 0;
+      if (postsToShow < total && !loadingMore) {
+        setLoadingMore(true);
+        setTimeout(() => {
+          setPostsToShow((p) => Math.min(p + 5, total));
+          setLoadingMore(false);
+        }, 400);
+      }
+    }
+  };
+
   return (
     <div style={{ backgroundColor: "#09344c", height: "100vh", zIndex: 4 }}>
       <img
@@ -481,8 +530,10 @@ const Home = () => {
         }}
       >
         <div
+          ref={postsContainerRef}
+          onScroll={handleScroll}
           style={{
-            overflowY: "scroll",
+            overflowY: "auto",
             scrollbarWidth: "none",
             height: 600,
             display: "flex",
@@ -491,7 +542,10 @@ const Home = () => {
             gap: 40,
           }}
         >
-          {blogs?.blogs?.map((element, index) => {
+          {fetching ? (
+            <div style={{ color: 'white', padding: 20 }}>Loading posts...</div>
+          ) : (
+            (Array.isArray(blogs?.blogs) ? blogs.blogs : []).slice(0, postsToShow).map((element, index) => {
             return (
               <div
                 key={`${element?.title || "blog"}-${index}`}
@@ -519,7 +573,7 @@ const Home = () => {
                 }}
                 onClick={() =>
                   navigate("/show", {
-                    state: { blog: element, author: blogs.name },
+                    state: { blog: element, author: element.authorName },
                   })
                 }
                 style={{
@@ -538,7 +592,7 @@ const Home = () => {
                   <div
                     style={{ display: "flex", gap: 20, alignItems: "center" }}
                   >
-                    {!blogs?.image || blogAvatarError ? (
+                    {!element?.authorImage || blogAvatarError ? (
                       <div
                         style={{
                           backgroundColor: "rgb(128, 164, 206)",
@@ -556,11 +610,11 @@ const Home = () => {
                         }}
                         id="gmail"
                       >
-                        {blogs?.name ? blogs.name.charAt(0).toUpperCase() : "U"}
+                        {element?.authorName ? element.authorName.charAt(0).toUpperCase() : "U"}
                       </div>
                     ) : (
                       <img
-                        src={blogs.image}
+                        src={element.authorImage}
                         onError={() => setBlogAvatarError(true)}
                         style={{
                           height: 35,
@@ -572,7 +626,7 @@ const Home = () => {
                       />
                     )}
                     <p style={{ color: "white", fontFamily: "roboto" }}>
-                      {blogs.name}
+                      {element.authorName}
                     </p>
                   </div>
                   <h1
@@ -592,9 +646,10 @@ const Home = () => {
                       overflow: "hidden",
                     }}
                   >
-                    {element.blogData.map((item, index3) => {
-                      return (
+                    {Array.isArray(element?.blogData) && element.blogData.length ? (
+                      element.blogData.map((item, index3) => (
                         <p
+                          key={index3}
                           style={{
                             width: "100%",
                             fontSize: 16.5,
@@ -602,10 +657,12 @@ const Home = () => {
                             fontFamily: "roboto",
                           }}
                         >
-                          {item.text && item.text}
+                          {item?.text || ""}
                         </p>
-                      );
-                    })}
+                      ))
+                    ) : (
+                      <p style={{ color: 'white' }}>No preview available.</p>
+                    )}
                   </div>
 
                   <div
@@ -636,13 +693,29 @@ const Home = () => {
                   </div>
                 </div>
                 <div>
-                  {element.blogData?.[1]?.image ? (
-                    <img style={{ height: 200 }} src={element.blogData?.[1]?.image} />
+                  {Array.isArray(element.blogData) && element.blogData.find(i => i.image) ? (
+                    <img style={{ height: 200 }} src={element.blogData.find(i => i.image).image} />
                   ) : null}
                 </div>
               </div>
             );
-          })}
+            })
+          )}
+          {/* Load more button for simple lazy loading */}
+          {loadingMore ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 10 }}>
+              <div style={{ color: 'white' }}>Loading more...</div>
+            </div>
+          ) : (Array.isArray(blogs?.blogs) && postsToShow < blogs.blogs.length ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 10 }}>
+              <button
+                onClick={() => setPostsToShow((p) => Math.min(p + 5, blogs.blogs.length))}
+                style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer' }}
+              >
+                Load more
+              </button>
+            </div>
+          ) : null)}
         </div>
         <div
           style={{
